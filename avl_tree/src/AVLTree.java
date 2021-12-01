@@ -11,7 +11,7 @@ public class AVLTree {
 
 	private final IAVLNode externalLeaf = new AVLNode();
 
-	private IAVLNode root = null;
+	private IAVLNode root = externalLeaf;
 	private int size = 0;
 
 	/**
@@ -41,7 +41,7 @@ public class AVLTree {
 		// to be replaced by student code
 	}
 
-	// AVLTree !empty()
+	// @pre: AVLTree !empty()
 
 	private IAVLNode search_rec(int k, IAVLNode pointer, IAVLNode pointerForInsert) {
 		if (pointer.getKey() < 0)
@@ -63,8 +63,12 @@ public class AVLTree {
 	 * promotion/rotation counts as one re-balance operation, double-rotation is
 	 * counted as 2. Returns -1 if an item with key k already exists in the tree.
 	 */
-	public int insert(int k, String i) {
+	public int insert(int k, String i) {	
 		IAVLNode leaf = new AVLNode(k, i);
+		return insert_node(leaf);
+	}
+	private int insert_node(IAVLNode leaf) { 
+		int k=leaf.getKey();
 		if (empty()) {
 			this.size++;
 			this.root = leaf;
@@ -82,56 +86,59 @@ public class AVLTree {
 		else
 			pointer.setLeft(leaf);
 
-		if (pointer.getHeight() == 1)
+		if (pointer.getHeight() == 1) // the father was a unary node
 			return 0;
 
-		else // the father was a leaf. we need to promote him and all of his parents.
+		if (pointer.getHeight() == 0) {  // the father was a leaf. we need to promote him and all of his parents.
 			pointer.setHeight(1);
-
-		return balance_rec(pointer);
+			return 1 + balance_rec(pointer);
+		}
+		return -2;
+	
 
 	}
+	
+	
+	
 
 	private int balance_rec(IAVLNode pointer) {
-		if (pointer.getParent() == null)
-			return 0;
-		int parent_bf = balanceFactor(pointer.getParent());
-		if (parent_bf == 0) //
-			return 0;
-		if (parent_bf == 1 || parent_bf == -1) {
-			pointer = pointer.getParent();
-			pointer.setHeight(pointer.getHeight() + 1);
-			return balance_rec(pointer);
-		}
-
+		
+		if (pointer==null)
+			return 0;	
 		int pointer_bf = balanceFactor(pointer);
-
-		if (parent_bf == 2) {
-			if (pointer_bf == -1) {
-				LR_rotate(pointer);
-				LL_rotate(pointer.getParent());
-				return 2;
-			}
-			if (pointer_bf > -1) {
-				LL_rotate(pointer);
-				return 1;
+		int k=pointer.getHeight();
+		if (pointer_bf == 0 || pointer_bf==1 || pointer_bf==-1) {
+			fixHeight(pointer);
+			if (pointer.getHeight()!=k)
+				return 1 + balance_rec(pointer.getParent());
+			else
+				return 0;
+		}
+		if (pointer_bf==2) {
+			int leftSon_bf = balanceFactor(pointer.getLeft());
+			if(leftSon_bf>-1) 
+				LL_rotate(pointer);			
+			if(leftSon_bf == -1) {
+				pointer = pointer.getLeft();
+				RR_rotate(pointer);		
 			}
 		}
-
-		if (parent_bf == -2) {
-			if (pointer_bf == 1) {
-				RL_rotate(pointer);
-				RR_rotate(pointer.getParent());
-				return 2;
-			}
-
-			if (pointer_bf < 1) {
+		if (pointer_bf==-2) {
+			int rightSon_bf=balanceFactor (pointer.getRight());
+			if (rightSon_bf<1)
 				RR_rotate(pointer);
-				return 1;
+			if (rightSon_bf==1) {
+				pointer = pointer.getRight();
+				LL_rotate(pointer);		
 			}
 		}
-		return 0;
-
+		k=pointer.getHeight();
+		fixHeight(pointer);
+		if (pointer.getHeight()!=k)
+			return 2 + balance_rec(pointer.getParent());
+		else
+			return 1 + balance_rec(pointer.getParent());
+		
 	}
 
 	private int balanceFactor(IAVLNode pointer) {
@@ -139,73 +146,50 @@ public class AVLTree {
 	}
 
 	private void LL_rotate(IAVLNode pointer) {
-		IAVLNode pointer_parent = pointer.getParent();
-		IAVLNode pointer_grandpa = pointer_parent.getParent();
-
-		if (pointer_grandpa != null) {
-			if (pointer_grandpa.getRight() == pointer_parent)
-				pointer_grandpa.setRight(pointer);
-			else
-				pointer_grandpa.setLeft(pointer);
-		} else
-			this.root = pointer;
-		pointer.setParent(pointer_grandpa);
-		pointer_parent.setLeft(pointer.getRight());
-		pointer_parent.getLeft().setParent(pointer_parent);
-
-		pointer.setRight(pointer_parent);
-		pointer_parent.setParent(pointer);
-	}
-
-	private void RR_rotate(IAVLNode pointer) {
-		IAVLNode pointer_parent = pointer.getParent();
-		IAVLNode pointer_grandpa = pointer_parent.getParent();
-		if (pointer_grandpa != null) {
-			if (pointer_grandpa.getRight() == pointer_parent)
-				pointer_grandpa.setRight(pointer);
-
-			else
-				pointer_grandpa.setLeft(pointer);
-		} else
-			this.root = pointer;
-		pointer.setParent(pointer_grandpa);
-		pointer_parent.setRight(pointer.getLeft());
-		pointer_parent.getRight().setParent(pointer_parent);
-
-		pointer.setLeft(pointer_parent);
-		pointer_parent.setParent(pointer);
-	}
-
-	private void RL_rotate(IAVLNode pointer) {
-		IAVLNode pointer_parent = pointer.getParent();
+		IAVLNode pointer_parent = pointer.getParent(); 
 		IAVLNode pointer_son = pointer.getLeft();
 
+		if (pointer_parent != null) {
+			if (pointer_parent.getRight() == pointer)
+				pointer_parent.setRight(pointer_son);
+			else
+				pointer_parent.setLeft(pointer_son);
+		} else
+			this.root = pointer_son;
+		pointer_son.setParent(pointer_parent);
 		pointer.setLeft(pointer_son.getRight());
 		pointer.getLeft().setParent(pointer);
 
 		pointer_son.setRight(pointer);
 		pointer.setParent(pointer_son);
-
-		pointer_son.setParent(pointer_parent);
-		pointer_parent.setRight(pointer_son);
-
 	}
-
-	private void LR_rotate(IAVLNode pointer) {
-		IAVLNode pointer_parent = pointer.getParent();
+	
+	
+	private void RR_rotate(IAVLNode pointer) {
+		IAVLNode pointer_parent = pointer.getParent(); 
 		IAVLNode pointer_son = pointer.getRight();
 
+		if (pointer_parent != null) {
+			if (pointer_parent.getRight() == pointer)
+				pointer_parent.setRight(pointer_son);
+			else
+				pointer_parent.setLeft(pointer_son);
+		} else
+			this.root = pointer_son;
+		pointer_son.setParent(pointer_parent);
 		pointer.setRight(pointer_son.getLeft());
 		pointer.getRight().setParent(pointer);
 
 		pointer_son.setLeft(pointer);
 		pointer.setParent(pointer_son);
-
-		pointer_son.setParent(pointer_parent);
-		pointer_parent.setLeft(pointer_son);
-
 	}
 
+	
+	private void fixHeight(IAVLNode pointer) {
+		pointer.setHeight(1 + Math.max(pointer.getLeft().getHeight(), pointer.getLeft().getHeight()));
+	}
+	
+	
 	/**
 	 * public int delete(int k)
 	 *
@@ -216,9 +200,93 @@ public class AVLTree {
 	 * counted as 2. Returns -1 if an item with key k was not found in the tree.
 	 */
 	public int delete(int k) {
-		return 421; // to be replaced by student code
+		if (empty())
+			return -1;
+		IAVLNode pointer = search_rec(k, this.root, this.root);
+		
+		if (pointer.getKey()!=k)
+			return -1;
+		if (pointer.getLeft()!=externalLeaf && pointer.getRight()!=externalLeaf) 
+			switchWithSuccessor(pointer);
+		IAVLNode parent=pointer.getParent();
+		if (pointer.getLeft()==externalLeaf || pointer.getRight()==externalLeaf) { //the deleted note is a leaf/unary
+			if (parent==null) { //the deleted node is the root of the tree
+				if (pointer.getLeft()==externalLeaf)  
+					root=pointer.getRight();
+				else
+					root=pointer.getLeft();
+				root.setParent(null);
+				return 0; //no need of demoting
+			}		
+			if (pointer.getLeft()==externalLeaf && pointer.getRight()==externalLeaf) { //the deleted node is a leaf
+				if (parent.getRight()==pointer)
+					parent.setRight(externalLeaf);
+				else
+					parent.setLeft(externalLeaf);
+				return balance_rec(parent);
+			}
+		
+			if (pointer.getLeft()==externalLeaf) { //the deleted node is a unary node with a right son
+				if (parent.getRight()==pointer)
+					parent.setRight(pointer.getRight()); //we skip the deleted node
+				else
+					parent.setLeft(pointer.getRight()); 
+			}
+			else { //the deleted node is a unary node with a left son
+				if (parent.getRight()==pointer)
+					parent.setRight(pointer.getLeft());
+				else
+					parent.setLeft(pointer.getLeft());
+			}
+			return balance_rec(parent);
+				
+		}
+		return -2;
 	}
-
+		
+	
+	// @pre: pointer must have a right son 
+	private void switchWithSuccessor (IAVLNode pointer) {
+		IAVLNode successor=pointer.getRight(),temp,parent=pointer.getParent();
+		while (successor.getLeft()!=externalLeaf)
+			successor=successor.getLeft();
+		temp=successor.getParent();
+		if (parent==null) 
+			root=successor;
+		else { 
+			successor.setParent(parent);
+			if (pointer==parent.getRight())
+				parent.setRight(successor);
+			else
+				parent.setLeft(successor);
+		}
+		pointer.setParent(temp);
+		if (successor == temp.getRight())
+			successor.getParent().setRight(pointer);
+		
+		
+		
+		
+		temp=successor.getRight
+	
+			
+			
+	
+			
+		
+				successor.setParent(pointer.getParent());
+		
+		temp.setRight(successor.getRight());
+		temp.setLeft(externalLeaf);
+		
+		temp.key(successor.getKey());
+		
+		
+		temp=successor;
+		successor=pointer;
+		pointer=temp;
+		
+	}
 	/**
 	 * public String min()
 	 *
@@ -343,39 +411,94 @@ public class AVLTree {
 	 */
 
 	public int join(IAVLNode x, AVLTree t) {
-		AVLTree big, small;
-		IAVLNode pointer;
-		if (t.size() > this.size) {
+		AVLTree big, small,left,right;
+		IAVLNode pointer,temp;
+		if (t.root.getHeight() > this.root.getHeight()) {
 			big = t;
 			small = this;
 		} else {
 			big = this;
 			small = t;
 		}
+		if (t.root.getKey()>this.root.getKey()) {
+			left=this;
+			right=t; }
+		else {
+			left=t;
+			right=this;
+		}
+		int k=small.getRoot().getHeight();
+		int res = big.root.getHeight() - small.root.getHeight() + 1;
 		x.setHeight(0);
+		x.setParent(null);
 		x.setRight(externalLeaf);
 		x.setLeft(externalLeaf);
-		if (big.empty()) {
+		if (big.empty()) { //Both trees are actually empty
 			this.root = x;
 			this.size = 1;
-			return 1;
+			return res;
 		}
 
-		if (small.empty()) {
+		if (small.empty()) { //only need to add x to the bigger tree
 			pointer = big.root;
-			if (x.getKey() < pointer.getKey()) {
-				while (pointer.getLeft() != externalLeaf)
-					pointer = pointer.getLeft();
-				pointer.setLeft(x);
-
-			} else {
-				while (pointer.getRight() != externalLeaf)
-					pointer = pointer.getRight();
-				pointer.setRight(x);
+			big.insert_node (x);
+			this.root=big.root;
+			this.size=big.size;
+			return res;
 			}
+		
+		if (res<=2) {
+			x.setLeft(left.getRoot());
+			x.setRight(right.getRoot());
+			x.setHeight(big.root.getHeight()+1);
+			x.getRight().setParent(x);
+			x.getLeft().setParent(x);
+			this.root=x;
+		}
+		if (right==small) {
+			pointer=big.root;
+			while (pointer.getHeight()>k)
+				pointer=pointer.getRight();
+			temp=pointer; //Storing the subtree that we replace in t
+			pointer.getParent().setRight(x);
+			x.setParent(pointer);
+			x.setLeft(temp);
+			temp.setParent(x);
+			x.setRight(small.getRoot());
+			small.getRoot().setParent(x);
+			x.setHeight(k+1);
+			balance_rec(x);
+			this.root=big.getRoot();
+		}
+		if (left==small) {
+			pointer=big.root;
+			while (pointer.getHeight()>k)
+				pointer=pointer.getLeft();
+			temp=pointer; //Storing the subtree that we replace in t
+			pointer.getParent().setLeft(x);
+			x.setParent(pointer);
+			x.setRight(temp);
+			temp.setParent(x);
+			x.setLeft(small.getRoot());
+			small.getRoot().setParent(x);
+			x.setHeight(k+1);
+			balance_rec(x);
+			this.root=big.getRoot();
+		}
+	this.size=big.size+small.size+1;
+	return res;
 		}
 
-	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
 	/**
 	 * public interface IAVLNode ! Do not delete or modify this - otherwise all
@@ -421,9 +544,8 @@ public class AVLTree {
 		private IAVLNode right;
 		private IAVLNode parent;
 
-		public AVLNode() { // the default value of a new node will be a leaf
+		public AVLNode() { // the default value of a new node will be an external leaf
 			this.info = null;
-			;
 			this.key = -1;
 			this.height = -1;
 			this.left = null;
