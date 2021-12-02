@@ -203,11 +203,15 @@ public class AVLTree {
 		if (empty())
 			return -1;
 		IAVLNode pointer = search_rec(k, this.root, this.root);
-		
 		if (pointer.getKey()!=k)
 			return -1;
-		if (pointer.getLeft()!=externalLeaf && pointer.getRight()!=externalLeaf) 
-			switchWithSuccessor(pointer);
+		
+		if (pointer.getLeft()!=externalLeaf && pointer.getRight()!=externalLeaf) {
+			IAVLNode successor=pointer.getRight(),temp,parent=pointer.getParent();
+			while (successor.getLeft()!=externalLeaf)
+				successor=successor.getLeft();
+			switchW(pointer , successor);
+		}
 		IAVLNode parent=pointer.getParent();
 		if (pointer.getLeft()==externalLeaf || pointer.getRight()==externalLeaf) { //the deleted note is a leaf/unary
 			if (parent==null) { //the deleted node is the root of the tree
@@ -245,47 +249,43 @@ public class AVLTree {
 	}
 		
 	
-	// @pre: pointer must have a right son 
-	private void switchWithSuccessor (IAVLNode pointer) {
-		IAVLNode successor=pointer.getRight(),temp,parent=pointer.getParent();
-		while (successor.getLeft()!=externalLeaf)
-			successor=successor.getLeft();
-		temp=successor.getParent();
-		if (parent==null) 
-			root=successor;
+	// @pre: A must have a two sons 
+	// @pre: B must have a parent
+
+	private void switchW(IAVLNode A , IAVLNode B) {
+		
+		IAVLNode B_left = B.getLeft();
+		IAVLNode B_right = B.getRight();
+		IAVLNode B_parent = B.getParent();
+		int B_height = B.getHeight();
+			
+		if (A.getParent()==null) 
+			root=B;
 		else { 
-			successor.setParent(parent);
-			if (pointer==parent.getRight())
-				parent.setRight(successor);
+			B.setParent(A.getParent());
+			if (A==A.getParent().getRight())
+				A.getParent().setRight(B);
 			else
-				parent.setLeft(successor);
+				A.getParent().setLeft(B);
 		}
-		pointer.setParent(temp);
-		if (successor == temp.getRight())
-			successor.getParent().setRight(pointer);
+		B.setLeft(A.getLeft());
+		B.getLeft().setParent(B);
+		B.setRight(B.getRight());
+		B.getRight().setParent(B);
+				
+		A.setRight(B_right);
+		A.getRight().setParent(A);
+		A.setLeft(B_left);
+		A.getLeft().setParent(A);
+		if (B == B_parent.getRight())
+			B_parent.setRight(A);
+		else
+			B_parent.setLeft(A);
+		A.setParent(B_parent);
 		
-		
-		
-		
-		temp=successor.getRight
-	
+		B.setHeight(A.getHeight());
+		A.setHeight(B_height);	
 			
-			
-	
-			
-		
-				successor.setParent(pointer.getParent());
-		
-		temp.setRight(successor.getRight());
-		temp.setLeft(externalLeaf);
-		
-		temp.key(successor.getKey());
-		
-		
-		temp=successor;
-		successor=pointer;
-		pointer=temp;
-		
 	}
 	/**
 	 * public String min()
